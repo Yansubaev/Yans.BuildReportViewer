@@ -1,0 +1,23 @@
+{
+  "name": "com.yans.buildreportviewer",
+  "version": "1.0.0",
+  "displayName": "Yans BuildReport Viewer",
+  "description": "A Unity package for analyzing and displaying Unity build reports within the Unity Editor.",
+  "unity": "2021.3",
+  "unityRelease": "0f1",
+  "dependencies": {},
+  "documentationUrl": "https://github.com/Yansubaev/Yans.BuildReportViewer.git#readme",
+  "changelogUrl": "https://github.com/Yansubaev/Yans.BuildReportViewer/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/Yansubaev/Yans.BuildReportViewer/blob/main/LICENSE",
+  "keywords": [
+    "buildreport",
+    "unity",
+    "editor",
+    "viewer"
+  ],
+  "author": {
+    "name": "Denis Iansubaev",
+    "email": "iansubd@gmail.com",
+    "url": "https://github.com/Yansubaev"
+  }
+}
