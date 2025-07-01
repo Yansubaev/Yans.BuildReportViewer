@@ -35,9 +35,17 @@ namespace Yans.BuildAnalyser
 
                     if (child == null)
                     {
-                        // For the final file, pass the original file path; for directories, pass null
-                        string childPath = (i == parts.Length - 1) ? buildFile.path : null;
-                        child = new BuildFileEntry(parts[i], 0, childPath);
+                        // For the final file, pass the BuildFile information; for directories, pass null
+                        if (i == parts.Length - 1)
+                        {
+                            // This is a file - include BuildFile details
+                            child = new BuildFileEntry(parts[i], 0, buildFile.path, buildFile.id, buildFile.role);
+                        }
+                        else
+                        {
+                            // This is a directory
+                            child = new BuildFileEntry(parts[i], 0);
+                        }
                         currentDir.AddChild(child);
                     }
 

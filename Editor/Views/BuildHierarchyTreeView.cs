@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
@@ -109,6 +110,100 @@ namespace Yans.BuildAnalyser
             }
         }
 
+        // Add context-click menu for 'Show in Explorer' in Files mode
+        protected override void ContextClickedItem(int id)
+        {
+            if (displayMode != BuildDisplayMode.Files)
+            {
+                base.ContextClickedItem(id);
+                return;
+            }
+            var item = FindItem(id, rootItem) as BuildEntryTreeViewItem;
+            var menu = new GenericMenu();
+            if (item != null)
+            {
+                // Check for any valid path - either AssetPath (Unity assets) or FullPath (build output files)
+                string pathToShow = null;
+                if (!string.IsNullOrEmpty(item.buildEntry.AssetPath))
+                {
+                    pathToShow = item.buildEntry.AssetPath;
+                }
+                else if (item.buildEntry is BuildFileEntry fileEntry && !string.IsNullOrEmpty(fileEntry.FullPath))
+                {
+                    pathToShow = fileEntry.FullPath;
+                }
+
+                if (!string.IsNullOrEmpty(pathToShow))
+                {
+                    menu.AddItem(new GUIContent("Show in Explorer"), false, () =>
+                    {
+                        string fullPath = Path.GetFullPath(pathToShow);
+                        if (File.Exists(fullPath))
+                        {
+                            // Show the file in explorer
+                            EditorUtility.RevealInFinder(fullPath);
+                        }
+                        else
+                        {
+                            // If file doesn't exist, try to show the directory
+                            string directory = Path.GetDirectoryName(fullPath);
+                            if (Directory.Exists(directory))
+                                EditorUtility.RevealInFinder(directory);
+                        }
+                    });
+                }
+                else
+                {
+                    // No valid path
+                    menu.AddDisabledItem(new GUIContent("Show in Explorer"));
+                }
+            }
+            else
+            {
+                menu.AddDisabledItem(new GUIContent("Show in Explorer"));
+            }
+            menu.ShowAsContext();
+        }
+
+        protected override void DoubleClickedItem(int id)
+        {
+            base.DoubleClickedItem(id);
+            if (displayMode != BuildDisplayMode.Files)
+                return;
+            var item = FindItem(id, rootItem) as BuildEntryTreeViewItem;
+            if (item != null)
+            {
+                // Check for any valid path - either AssetPath (Unity assets) or FullPath (build output files)
+                string pathToShow = null;
+                if (!string.IsNullOrEmpty(item.buildEntry.AssetPath))
+                {
+                    pathToShow = item.buildEntry.AssetPath;
+                }
+                else if (item.buildEntry is BuildFileEntry fileEntry && !string.IsNullOrEmpty(fileEntry.FullPath))
+                {
+                    pathToShow = fileEntry.FullPath;
+                }
+
+                if (!string.IsNullOrEmpty(pathToShow))
+                {
+                    string fullPath = Path.GetFullPath(pathToShow);
+                    if (File.Exists(fullPath))
+                    {
+                        // Show the file in explorer
+                        EditorUtility.RevealInFinder(fullPath);
+                    }
+                    else
+                    {
+                        // If file doesn't exist, try to show the directory
+                        string directory = Path.GetDirectoryName(fullPath);
+                        if (Directory.Exists(directory))
+                            EditorUtility.RevealInFinder(directory);
+                    }
+                }
+            }
+        }
+
+        // ...existing RowGUI...
         protected override void RowGUI(RowGUIArgs args)
         {
             // Trim name to first line

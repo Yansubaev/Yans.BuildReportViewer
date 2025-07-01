@@ -4,6 +4,21 @@ All notable changes to this package will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2025-07-02
+### Added
+- **Explorer Context Menu Support**: Enabled "Show in Explorer" context menu by implementing robust path detection for both Unity assets and build output files.
+- **File Details Panel**: Added comprehensive file information panel that appears at the bottom of the window when selecting individual files in Files mode.
+- **Path Handling**: Context menu and double-click actions now check multiple path sources (AssetPath and FullPath) for better file location detection.
+- **BuildFile Integration**: Enhanced `BuildFileEntry` class to store additional BuildFile information including file ID, role, and full path for detailed display.
+- **Reusable UI Components**: Created `InfoPanelRenderer` utility class for consistent info panel styling across different modes.
+- **Clickable File Paths**: File paths in the details panel are now clickable buttons that open the file location in system explorer.
+- **Enhanced Explorer Integration**: Improved "Show in Explorer" context menu and double-click functionality to work with both Unity assets and build output files.
+- **Smart Path Resolution**: File info panel displays both Unity asset paths (for project files) and full system paths (for build output files).
+
+### Changed
+- **Unified Details Panel Logic**: Refactored message details and file details to use consistent rendering approach and reusable components.
+- **Enhanced BuildFileEntry Constructor**: Extended constructor to accept optional BuildFile properties (file ID, role) while maintaining backward compatibility.
+
 ## [1.0.1] - 2025-06-26
 ### Added
 - **Enhanced Build Report Management**: Automatic saving of build reports to `Assets/BuildReports/` directory after each successful build.

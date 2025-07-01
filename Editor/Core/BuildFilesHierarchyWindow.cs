@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -25,6 +26,8 @@ namespace Yans.BuildAnalyser
         private bool needsReload;
         // Scroll position for message details
         private Vector2 messageScrollPos;
+        // Scroll position for file info details
+        private Vector2 fileInfoScrollPos;
         // Keep track of current temp file to clean up when loading new reports
         private string currentTempAssetPath;
         // Static flag to prevent auto-loading when opening with specific report
@@ -238,29 +241,29 @@ namespace Yans.BuildAnalyser
             {
                 float totalHeight = position.height - contentStartY;
                 bool showMessage = currentMode == BuildDisplayMode.BuildSteps && treeView.SelectedEntry is BuildStepMessageEntry;
-                float messageHeight = showMessage ? Mathf.Min(200, totalHeight * 0.3f) : 0;
-                float treeHeight = totalHeight - messageHeight;
+                bool showFileInfo = currentMode == BuildDisplayMode.Files && treeView.SelectedEntry is BuildFileEntry fileEntry && !fileEntry.IsDirectory;
+                
+                float detailsHeight = 0;
+                if (showMessage || showFileInfo)
+                {
+                    detailsHeight = Mathf.Min(200, totalHeight * 0.3f);
+                }
+                
+                float treeHeight = totalHeight - detailsHeight;
                 var treeRect = new Rect(0, contentStartY, position.width, treeHeight);
                 treeView.OnGUI(treeRect);
+                
+                // Show message details for BuildSteps mode
                 if (showMessage && treeView.SelectedEntry is BuildStepMessageEntry msgEntry)
                 {
-                    var msgRect = new Rect(0, contentStartY + treeHeight, position.width, messageHeight);
-                    // Draw background
-                    var bgColor = EditorGUIUtility.isProSkin ? new Color(0.22f, 0.22f, 0.22f, 1f) : new Color(0.76f, 0.76f, 0.76f, 1f);
-                    EditorGUI.DrawRect(msgRect, bgColor);
-                    // Title
-                    float titleH = EditorGUIUtility.singleLineHeight + 4;
-                    var titleRect = new Rect(msgRect.x + 4, msgRect.y + 2, msgRect.width - 8, EditorGUIUtility.singleLineHeight);
-                    EditorGUI.LabelField(titleRect, "Message Details", EditorStyles.boldLabel);
-                    // Scroll area
-                    var scrollRect = new Rect(msgRect.x + 4, msgRect.y + titleH, msgRect.width - 8, msgRect.height - titleH - 4);
-                    // Estimate content height
-                    float contentW = scrollRect.width - 16;
-                    var style = EditorStyles.wordWrappedLabel;
-                    float contentH = style.CalcHeight(new GUIContent(msgEntry.Name), contentW);
-                    messageScrollPos = GUI.BeginScrollView(scrollRect, messageScrollPos, new Rect(0, 0, contentW, contentH));
-                    GUI.Label(new Rect(0, 0, contentW, contentH), msgEntry.Name, style);
-                    GUI.EndScrollView();
+                    var msgRect = new Rect(0, contentStartY + treeHeight, position.width, detailsHeight);
+                    RenderMessagePanel(msgRect, msgEntry);
+                }
+                // Show file details for Files mode
+                else if (showFileInfo)
+                {
+                    var fileInfoRect = new Rect(0, contentStartY + treeHeight, position.width, detailsHeight);
+                    RenderFileInfoPanel(fileInfoRect, (BuildFileEntry)treeView.SelectedEntry);
                 }
             }
         }
@@ -664,6 +667,160 @@ namespace Yans.BuildAnalyser
         {
             // Called when the window loses focus
             // Nothing needed here since the issue is Unity engine-level
+        }
+
+        private void RenderMessagePanel(Rect rect, BuildStepMessageEntry msgEntry)
+        {
+            // Draw background
+            var bgColor = EditorGUIUtility.isProSkin ? new Color(0.22f, 0.22f, 0.22f, 1f) : new Color(0.76f, 0.76f, 0.76f, 1f);
+            EditorGUI.DrawRect(rect, bgColor);
+            
+            // Title
+            float titleHeight = EditorGUIUtility.singleLineHeight + 4;
+            var titleRect = new Rect(rect.x + 4, rect.y + 2, rect.width - 8, EditorGUIUtility.singleLineHeight);
+            EditorGUI.LabelField(titleRect, "Message Details", EditorStyles.boldLabel);
+            
+            // Scroll area
+            var scrollRect = new Rect(rect.x + 4, rect.y + titleHeight, rect.width - 8, rect.height - titleHeight - 4);
+            
+            // Estimate content height
+            float contentW = scrollRect.width - 16;
+            var style = EditorStyles.wordWrappedLabel;
+            float contentH = style.CalcHeight(new GUIContent(msgEntry.Name), contentW);
+            
+            messageScrollPos = GUI.BeginScrollView(scrollRect, messageScrollPos, new Rect(0, 0, contentW, contentH));
+            GUI.Label(new Rect(0, 0, contentW, contentH), msgEntry.Name, style);
+            GUI.EndScrollView();
+        }
+
+        private void RenderFileInfoPanel(Rect rect, BuildFileEntry fileEntry)
+        {
+            // Draw background
+            var bgColor = EditorGUIUtility.isProSkin ? new Color(0.22f, 0.22f, 0.22f, 1f) : new Color(0.76f, 0.76f, 0.76f, 1f);
+            EditorGUI.DrawRect(rect, bgColor);
+            
+            // Title
+            float titleHeight = EditorGUIUtility.singleLineHeight + 4;
+            var titleRect = new Rect(rect.x + 4, rect.y + 2, rect.width - 8, EditorGUIUtility.singleLineHeight);
+            EditorGUI.LabelField(titleRect, "File Info", EditorStyles.boldLabel);
+            
+            // Content area
+            var contentRect = new Rect(rect.x + 4, rect.y + titleHeight, rect.width - 8, rect.height - titleHeight - 4);
+            
+            // Calculate content height needed
+            float lineHeight = EditorGUIUtility.singleLineHeight + 2;
+            int fieldCount = 0;
+            
+            // Count fields to show
+            fieldCount++; // Name
+            fieldCount++; // Size
+            if (fileEntry.FileId.HasValue) fieldCount++; // File ID
+            if (!string.IsNullOrEmpty(fileEntry.Role)) fieldCount++; // Role
+            if (!string.IsNullOrEmpty(fileEntry.FullPath)) fieldCount++; // Full Path
+            if (!string.IsNullOrEmpty(fileEntry.AssetPath)) fieldCount++; // Asset Path
+            
+            float contentHeight = fieldCount * lineHeight;
+            
+            // Render fields with scroll view if needed
+            fileInfoScrollPos = GUI.BeginScrollView(contentRect, fileInfoScrollPos, new Rect(0, 0, contentRect.width - 16, contentHeight));
+            
+            float yPos = 0;
+            const float labelWidth = 120f;
+            
+            // Name
+            RenderInfoField("Name", fileEntry.Name, yPos, contentRect.width - 16, labelWidth);
+            yPos += lineHeight;
+            
+            // Size
+            string sizeText = FormatBytes(fileEntry.SizeBytes);
+            RenderInfoField("Size", sizeText, yPos, contentRect.width - 16, labelWidth);
+            yPos += lineHeight;
+            
+            // File ID (if available)
+            if (fileEntry.FileId.HasValue)
+            {
+                RenderInfoField("File ID", fileEntry.FileId.Value.ToString(), yPos, contentRect.width - 16, labelWidth);
+                yPos += lineHeight;
+            }
+            
+            // Role (if available)
+            if (!string.IsNullOrEmpty(fileEntry.Role))
+            {
+                RenderInfoField("Role", fileEntry.Role, yPos, contentRect.width - 16, labelWidth);
+                yPos += lineHeight;
+            }
+            
+            // Full Path (if available)
+            if (!string.IsNullOrEmpty(fileEntry.FullPath))
+            {
+                RenderClickablePathField("Path", fileEntry.FullPath, yPos, contentRect.width - 16, labelWidth);
+                yPos += lineHeight;
+            }
+            
+            // Asset Path (if it's a Unity asset)
+            if (!string.IsNullOrEmpty(fileEntry.AssetPath))
+            {
+                RenderClickablePathField("Asset Path", fileEntry.AssetPath, yPos, contentRect.width - 16, labelWidth);
+                yPos += lineHeight;
+            }
+            
+            GUI.EndScrollView();
+        }
+        
+        private void RenderInfoField(string label, string value, float yPos, float width, float labelWidth)
+        {
+            var labelRect = new Rect(0, yPos, labelWidth, EditorGUIUtility.singleLineHeight);
+            var valueRect = new Rect(labelWidth, yPos, width - labelWidth, EditorGUIUtility.singleLineHeight);
+            
+            EditorGUI.LabelField(labelRect, $"{label}:", EditorStyles.label);
+            EditorGUI.LabelField(valueRect, value, EditorStyles.label);
+        }
+        
+        private void RenderClickablePathField(string label, string path, float yPos, float width, float labelWidth)
+        {
+            var labelRect = new Rect(0, yPos, labelWidth, EditorGUIUtility.singleLineHeight);
+            var valueRect = new Rect(labelWidth, yPos, width - labelWidth, EditorGUIUtility.singleLineHeight);
+            
+            EditorGUI.LabelField(labelRect, $"{label}:", EditorStyles.label);
+            
+            // Make the path clickable using linkLabel style
+            if (GUI.Button(valueRect, path, EditorStyles.linkLabel))
+            {
+                OpenFileInExplorer(path);
+            }
+        }
+        
+        private void OpenFileInExplorer(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return;
+                
+            try
+            {
+                string fullPath = Path.GetFullPath(path);
+                if (File.Exists(fullPath))
+                {
+                    // Show the file in explorer
+                    EditorUtility.RevealInFinder(fullPath);
+                }
+                else
+                {
+                    // If file doesn't exist, try to show the directory
+                    string directory = Path.GetDirectoryName(fullPath);
+                    if (Directory.Exists(directory))
+                    {
+                        EditorUtility.RevealInFinder(directory);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"Path does not exist: {fullPath}");
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"Failed to open path in explorer: {path}. Error: {ex.Message}");
+            }
         }
 
         #endregion

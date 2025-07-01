@@ -12,14 +12,22 @@ namespace Yans.BuildAnalyser
         public IReadOnlyList<IBuildEntry> Children => _children;
         public bool IsDirectory => _children.Count > 0;
         public string AssetPath { get; private set; }
+        
+        // Additional BuildFile information for detailed view
+        public uint? FileId { get; private set; }
+        public string Role { get; private set; }
+        public string FullPath { get; private set; }
         #endregion
 
         private List<IBuildEntry> _children = new List<IBuildEntry>();
 
-        public BuildFileEntry(string name, ulong sizeBytes, string filePath = null)
+        public BuildFileEntry(string name, ulong sizeBytes, string filePath = null, uint? fileId = null, string role = null)
         {
             Name = name;
             SizeBytes = sizeBytes;
+            FileId = fileId;
+            Role = role;
+            FullPath = filePath;
 
             // Set AssetPath only if it's a valid Unity asset path
             if (!string.IsNullOrEmpty(filePath) && filePath.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase))

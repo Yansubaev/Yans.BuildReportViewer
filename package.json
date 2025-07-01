@@ -1,6 +1,6 @@
 {
   "name": "com.yans.buildreportviewer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "displayName": "Yans BuildReport Viewer",
   "description": "A Unity package for analyzing and displaying Unity build reports within the Unity Editor.",
   "unity": "2021.3",
